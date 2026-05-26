@@ -2,7 +2,7 @@
 
 A Crystal library for generating and parsing **ZUGFeRD 2.x** (Factur-X) e-invoices — the structured XML format mandated by EU Directive 2014/55/EU and German GOBD.
 
-Generates UN/CEFACT CII XML, validates against EN 16931 business rules, and parses CII XML back into domain structs. Validated against the official Mustang CLI (XSD + Schematron).
+Generates UN/CEFACT CII XML, validates against EN 16931 business rules, parses CII XML back into domain structs, and optionally embeds the XML into a PDF/A-3b file. Validated against the official Mustang CLI (XSD + Schematron).
 
 ## Profiles supported
 
@@ -25,6 +25,26 @@ dependencies:
 ```
 
 Then run `shards install`.
+
+### PDF/A-3b embedding (optional)
+
+PDF embedding requires [libharu](http://libharu.org/) (system package) and the `hpdf` shard. Add it to your `shard.yml`:
+
+```yaml
+dependencies:
+  zugpferd:
+    github: zugpferd/zugpferd.cr
+  hpdf:
+    github: threez/hpdf.cr
+    version: ~> 0.9.10
+```
+
+Then opt in with a separate require:
+
+```crystal
+require "zugpferd"
+require "zugpferd/pdf"
+```
 
 ## Usage
 
@@ -111,6 +131,24 @@ puts inv.settlement.grand_total_amount    # => 1428.00
 puts inv.line_items.size                  # => 1
 ```
 
+### Embedding XML into a PDF/A-3b file
+
+Requires the optional `hpdf` dependency and `require "zugpferd/pdf"` (see Installation above).
+
+```crystal
+require "zugpferd"
+require "zugpferd/pdf"
+
+xml = invoice.to_xml
+
+Zugpferd::PdfEmbed.create(xml, "invoice.pdf") do |doc|
+  page = doc.add_page
+  # draw invoice layout using the Hpdf::Doc API...
+end
+```
+
+`PdfEmbed.create` sets up PDF/A-3b conformance (XMP metadata, sRGB output intent, Factur-X extension namespace) and attaches `factur-x.xml` before saving.
+
 ### Validation
 
 `Invoice#to_xml` runs the built-in validator automatically. To validate without generating XML:
@@ -137,12 +175,13 @@ end
 | `SupplyChainTradeLineItem` | Invoice line with quantity, price, tax |
 | `SpecifiedTradeAllowanceCharge` | Header-level or line-level discount/surcharge |
 | `Profile` | Enum: `MINIMUM`, `BASIC_WL`, `BASIC`, `EN16931`, `EXTENDED`, `XRECHNUNG` |
+| `PdfEmbed` | Embeds CII XML into a PDF/A-3b file (`require "zugpferd/pdf"`) |
 
 ## Development
 
 ```bash
-crystal spec              # unit + compliance tests (103 examples)
-make test-integration     # downloads Mustang CLI and runs XSD/Schematron validation
+crystal spec              # unit + compliance tests
+make test-integration     # downloads Mustang CLI and runs XSD/Schematron + PDF/A-3b validation
 ```
 
 `make test-integration` requires Java. It downloads the [Mustang CLI](https://www.mustangproject.org/commandline/) JAR to `vendor/` on first run and validates all generated profiles plus fixture files against the official EN 16931 schemas.
