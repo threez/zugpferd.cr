@@ -8,12 +8,10 @@ crystal: '>= 1.19.1'
 
 license: MIT
 
-dependencies:
+development_dependencies:
   hpdf:
     github: threez/hpdf.cr
-    version: ~> 0.9.9
-
-development_dependencies:
+    version: ~> 0.9.10
   ameba:
     github: crystal-ameba/ameba
     version: ~> 1.6.0

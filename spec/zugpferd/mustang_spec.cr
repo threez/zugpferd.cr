@@ -1,5 +1,5 @@
 require "../spec_helper"
-require "../../src/zugpferd/pdf_embed"
+require "../../src/zugpferd/pdf"
 
 # Integration tests that shell out to the Mustang CLI validator.
 # Set MUSTANG_JAR=/path/to/Mustang-CLI-X.Y.Z.jar to enable.
