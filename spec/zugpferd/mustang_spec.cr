@@ -1,4 +1,5 @@
 require "../spec_helper"
+require "../../src/zugpferd/pdf_embed"
 
 # Integration tests that shell out to the Mustang CLI validator.
 # Set MUSTANG_JAR=/path/to/Mustang-CLI-X.Y.Z.jar to enable.
@@ -13,6 +14,22 @@ describe "Mustang external validation" do
         result = MustangValidator.validate(xml)
         result.errors.each { |e| fail e } unless result.valid
         result.valid.should be_true
+      end
+    end
+  end
+
+  describe "PDF/A-3b embedding" do
+    it "EN16931 invoice embedded in PDF passes Mustang validation" do
+      pending! "MUSTANG_JAR not set or java not available" unless MustangValidator.available?
+      xml = SpecHelper.minimal_invoice(Zugpferd::Profile::EN16931).to_xml
+      tmp = File.tempfile("zugferd-mustang", ".pdf")
+      begin
+        Zugpferd::PdfEmbed.create(xml, tmp.path, &.add_page)
+        result = MustangValidator.validate_pdf(File.read(tmp.path))
+        result.errors.each { |err| fail err } unless result.valid
+        result.valid.should be_true
+      ensure
+        tmp.delete
       end
     end
   end

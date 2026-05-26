@@ -10,17 +10,29 @@ module MustangValidator
 
   def self.validate(xml_string : String) : Result
     jar = MUSTANG_JAR || raise "MUSTANG_JAR not set"
-    file = File.tempfile("zugpferd-validate", ".xml") do |tmp|
-      tmp.print(xml_string)
-    end
+    file = File.tempfile("zugpferd-validate", ".xml", &.print(xml_string))
     begin
-      output = IO::Memory.new
-      status = Process.run("java", ["-jar", jar, "--action=validate", "--source=#{file.path}"],
-        output: output, error: Process::Redirect::Close)
-      parse_report(output.to_s, status.exit_code)
+      run_mustang(jar, file.path)
     ensure
       file.delete
     end
+  end
+
+  def self.validate_pdf(pdf_bytes : String) : Result
+    jar = MUSTANG_JAR || raise "MUSTANG_JAR not set"
+    file = File.tempfile("zugpferd-validate", ".pdf", &.print(pdf_bytes))
+    begin
+      run_mustang(jar, file.path)
+    ensure
+      file.delete
+    end
+  end
+
+  private def self.run_mustang(jar : String, path : String) : Result
+    output = IO::Memory.new
+    status = Process.run("java", ["-jar", jar, "--action=validate", "--source=#{path}"],
+      output: output, error: Process::Redirect::Close)
+    parse_report(output.to_s, status.exit_code)
   end
 
   private def self.parse_report(raw : String, exit_code : Int32) : Result
