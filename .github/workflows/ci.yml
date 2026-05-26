@@ -1,0 +1,38 @@
+on:
+  push:
+  pull_request:
+    branches: [master]
+jobs:
+  verify-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download source
+        uses: actions/checkout@v4
+      - name: Install Crystal
+        uses: crystal-lang/install-crystal@v1
+      - name: Install libharu
+        run: sudo apt install libhpdf-dev
+      - name: Install development dependencies
+        run: shards install
+      - name: Run tests
+        run: make test
+      - name: Make sure the files are formatted
+        run: crystal tool format --check
+      - name: Run linter
+        run: bin/ameba
+
+  # libharu >= 2.4 (required for PDF/A-3b) is only available via Homebrew on macOS.
+  # Ubuntu ships 2.3.0, so PDF embedding and its integration tests run here only.
+  verify-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Download source
+        uses: actions/checkout@v4
+      - name: Install libharu and Crystal
+        run: brew install libharu crystal libpng
+      - name: Install development dependencies
+        run: shards install
+      - name: Run tests
+        run: make test
+      - name: Run integration tests
+        run: make test-integration
