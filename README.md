@@ -6,13 +6,11 @@ Generates UN/CEFACT CII XML, validates against EN 16931 business rules, parses C
 
 ## Profiles supported
 
-| Profile | Guideline URI |
-|---------|--------------|
-| MINIMUM | `urn:factur-x.eu:1p0:minimum` |
-| BASIC WL | `urn:factur-x.eu:1p0:basicwl` |
-| BASIC | `urn:cen.eu:en16931:2017#compliant#urn:factur-x.eu:1p0:basic` |
-| EN16931 (Comfort) | `urn:cen.eu:en16931:2017` |
-| EXTENDED | `urn:cen.eu:en16931:2017#conformant#urn:factur-x.eu:1p0:extended` |
+- **MINIMUM** — `urn:factur-x.eu:1p0:minimum`
+- **BASIC WL** — `urn:factur-x.eu:1p0:basicwl`
+- **BASIC** — `urn:cen.eu:en16931:2017#compliant#urn:factur-x.eu:1p0:basic`
+- **EN16931 (Comfort)** — `urn:cen.eu:en16931:2017`
+- **EXTENDED** — `urn:cen.eu:en16931:2017#conformant#urn:factur-x.eu:1p0:extended`
 
 ## Installation
 
@@ -163,28 +161,26 @@ end
 
 ## Key types
 
-| Type | Description |
-|------|-------------|
-| `Invoice` | Top-level document; use `Invoice.build` |
-| `ExchangedDocument` | Invoice ID, date, type code, notes |
-| `TradeParty` | Seller or buyer with address, tax registrations, contact |
-| `TradeAddress` | Postal address (`city` + `country_id` required) |
-| `TaxRegistration` | VAT ID (scheme `VA`) or tax number (scheme `FC`) |
-| `TradeSettlement` | Currency, taxes, totals, payment means |
-| `ApplicableTradeTax` | VAT breakdown entry (calculated amount, basis, rate) |
-| `SupplyChainTradeLineItem` | Invoice line with quantity, price, tax |
-| `SpecifiedTradeAllowanceCharge` | Header-level or line-level discount/surcharge |
-| `Profile` | Enum: `MINIMUM`, `BASIC_WL`, `BASIC`, `EN16931`, `EXTENDED`, `XRECHNUNG` |
-| `PdfEmbed` | Embeds CII XML into a PDF/A-3b file (`require "zugpferd/pdf"`) |
+- `Invoice` — top-level document; use `Invoice.build`
+- `ExchangedDocument` — invoice ID, date, type code, notes
+- `TradeParty` — seller or buyer with address, tax registrations, contact
+- `TradeAddress` — postal address (`city` + `country_id` required)
+- `TaxRegistration` — VAT ID (scheme `VA`) or tax number (scheme `FC`)
+- `TradeSettlement` — currency, taxes, totals, payment means
+- `ApplicableTradeTax` — VAT breakdown entry (calculated amount, basis, rate)
+- `SupplyChainTradeLineItem` — invoice line with quantity, price, tax
+- `SpecifiedTradeAllowanceCharge` — header-level or line-level discount/surcharge
+- `Profile` — enum: `MINIMUM`, `BASIC_WL`, `BASIC`, `EN16931`, `EXTENDED`, `XRECHNUNG`
+- `PdfEmbed` — embeds CII XML into a PDF/A-3b file (`require "zugpferd/pdf"`)
 
 ## Development
 
 ```bash
 crystal spec              # unit + compliance tests
-make test-integration     # downloads Mustang CLI and runs XSD/Schematron + PDF/A-3b validation
+make spec-integration     # downloads Mustang CLI and runs XSD/Schematron + PDF/A-3b validation
 ```
 
-`make test-integration` requires Java. It downloads the [Mustang CLI](https://www.mustangproject.org/commandline/) JAR to `vendor/` on first run and validates all generated profiles plus fixture files against the official EN 16931 schemas.
+`make spec-integration` requires Java. It downloads the [Mustang CLI](https://www.mustangproject.org/commandline/) JAR to `vendor/` on first run and validates all generated profiles plus fixture files against the official EN 16931 schemas.
 
 ## License
 
