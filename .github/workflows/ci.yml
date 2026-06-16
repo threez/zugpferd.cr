@@ -15,11 +15,9 @@ jobs:
       - name: Install development dependencies
         run: shards install
       - name: Run tests
-        run: make test
+        run: make lint spec
       - name: Make sure the files are formatted
         run: crystal tool format --check
-      - name: Run linter
-        run: bin/ameba
 
   # libharu >= 2.4 (required for PDF/A-3b) is only available via Homebrew on macOS.
   # Ubuntu ships 2.3.0, so PDF embedding and its integration tests run here only.
@@ -33,6 +31,6 @@ jobs:
       - name: Install development dependencies
         run: shards install
       - name: Run tests
-        run: make test
+        run: make lint spec
       - name: Run integration tests
-        run: make test-integration
+        run: make spec-integration
