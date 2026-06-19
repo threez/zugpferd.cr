@@ -1,5 +1,5 @@
 name: zugpferd
-version: 0.1.1
+version: 0.1.2
 
 authors:
   - Vincent Landgraf <vincent@landgrafx.de>
@@ -11,7 +11,7 @@ license: MIT
 development_dependencies:
   hpdf:
     github: threez/hpdf.cr
-    version: ~> 0.9.10
+    version: ~> 1.0
   ameba:
     github: crystal-ameba/ameba
     version: ~> 1.6.0
