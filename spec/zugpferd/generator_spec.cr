@@ -21,7 +21,7 @@ describe Zugpferd::Generator do
     it "formats issue date as YYYYMMDD with format 102" do
       xml_str = SpecHelper.minimal_invoice(Zugpferd::Profile::MINIMUM).to_xml
       xml_str.should contain("20250115")
-      xml_str.should contain(%[format="102"])
+      xml_str.should contain(%(format="102"))
     end
 
     it "includes seller and buyer names" do

@@ -3,34 +3,61 @@ on:
   pull_request:
     branches: [master]
 jobs:
-  verify-linux:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - name: Download source
         uses: actions/checkout@v4
       - name: Install Crystal
         uses: crystal-lang/install-crystal@v1
-      - name: Install libharu
-        run: sudo apt install libhpdf-dev
+        with:
+          crystal: 1.20.2
+      - name: Cache shards
+        uses: actions/cache@v4
+        with:
+          path: lib
+          key: ${{ runner.os }}-shards-${{ hashFiles('shard.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-shards-
       - name: Install development dependencies
         run: shards install
-      - name: Run tests
-        run: make lint spec
+      - name: Build ameba
+        run: cd lib/ameba && shards build ameba
       - name: Make sure the files are formatted
         run: crystal tool format --check
+      - name: Run ameba lint
+        run: lib/ameba/bin/ameba
+      - name: Install libharu
+        run: sudo apt-get install -y libhpdf-dev
+      - name: Check that the project compiles
+        run: crystal build src/zugpferd.cr -o /tmp/zugpferd_check --no-codegen
 
-  # libharu >= 2.4 (required for PDF/A-3b) is only available via Homebrew on macOS.
-  # Ubuntu ships 2.3.0, so PDF embedding and its integration tests run here only.
-  verify-macos:
-    runs-on: macos-latest
+  test:
+    needs: lint
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Download source
         uses: actions/checkout@v4
+      - name: Install Crystal
+        if: matrix.os == 'ubuntu-latest'
+        uses: crystal-lang/install-crystal@v1
+        with:
+          crystal: 1.20.2
+      - name: Install libharu
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt install libhpdf-dev
+      # libharu >= 2.4 (required for PDF/A-3b) is only available via Homebrew on macOS.
+      # Ubuntu ships 2.3.0, so PDF embedding and its integration tests run here only.
       - name: Install libharu and Crystal
+        if: matrix.os == 'macos-latest'
         run: brew install libharu crystal libpng
       - name: Install development dependencies
         run: shards install
       - name: Run tests
-        run: make lint spec
+        run: crystal spec --order=random
       - name: Run integration tests
+        if: matrix.os == 'macos-latest'
         run: make spec-integration
