@@ -21,6 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `crystal spec --order=random`, plus `make spec-integration` on macOS where
   libharu >= 2.4 is available), with shard caching and an explicit
   `shards build ameba` step added to the `lint` job.
+- Dropped `ubuntu-latest` from the `test` job's matrix: `src/zugpferd/pdf.cr`
+  calls PDF/A functions (`HPDF_SetPDFAConformance`,
+  `HPDF_AppendOutputIntents`, `HPDF_EmbeddedFile_*`, etc.) that require
+  libharu >= 2.4, but apt's `libhpdf-dev` package predates that, so
+  `crystal spec` failed to link on Ubuntu entirely. The `lint` job's
+  Ubuntu compile check still passes since it uses `--no-codegen` and
+  doesn't link; `crystal spec` and `make spec-integration` now run on
+  macOS only, where Homebrew's libharu is current enough.
 - Updated the `Makefile`'s `lib/ameba/bin/ameba` rule to explicitly run
   `shards build ameba` after `shards install`, since ameba 1.7.0 no longer
   ships a `postinstall` build hook.
