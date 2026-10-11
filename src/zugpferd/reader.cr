@@ -138,18 +138,32 @@ module Zugpferd
     end
 
     private def parse_trade_party(node : XML::Node) : TradeParty
-      name = require_child_text(node, "Name")
+      global_id, global_id_scheme = parse_trade_party_global_id(node)
+      electronic_address, electronic_address_scheme = parse_trade_party_electronic_address(node)
+      contact_name, contact_phone, contact_email = parse_trade_party_contact(node)
 
-      global_id = nil
-      global_id_scheme = nil
-      if gid_node = find_child(node, "GlobalID")
-        t = gid_node.content.strip
-        unless t.empty?
-          global_id = t
-          global_id_scheme = gid_node["schemeID"]?
-        end
-      end
+      TradeParty.new(
+        require_child_text(node, "Name"),
+        address: parse_trade_address(find_child(node, "PostalTradeAddress")),
+        tax_registrations: parse_trade_party_tax_registrations(node),
+        global_id: global_id,
+        global_id_scheme: global_id_scheme,
+        electronic_address: electronic_address,
+        electronic_address_scheme: electronic_address_scheme,
+        contact_name: contact_name,
+        contact_phone: contact_phone,
+        contact_email: contact_email
+      )
+    end
 
+    private def parse_trade_party_global_id(node : XML::Node) : {String?, String?}
+      return {nil, nil} unless gid_node = find_child(node, "GlobalID")
+      t = gid_node.content.strip
+      return {nil, nil} if t.empty?
+      {t, gid_node["schemeID"]?}
+    end
+
+    private def parse_trade_party_tax_registrations(node : XML::Node) : Array(TaxRegistration)
       tax_regs = [] of TaxRegistration
       each_child(node, "SpecifiedTaxRegistration") do |reg_node|
         id_node = find_child(reg_node, "ID")
@@ -161,50 +175,33 @@ module Zugpferd
         id_text = id_node.content.strip
         tax_regs << TaxRegistration.new(scheme, id_text) unless id_text.empty?
       end
+      tax_regs
+    end
 
-      address = parse_trade_address(find_child(node, "PostalTradeAddress"))
+    private def parse_trade_party_electronic_address(node : XML::Node) : {String?, String?}
+      return {nil, nil} unless uri_node = find_child(node, "URIUniversalCommunication")
+      return {nil, nil} unless uriid = find_child(uri_node, "URIID")
+      t = uriid.content.strip
+      return {nil, nil} if t.empty?
+      {t, uriid["schemeID"]?}
+    end
 
-      electronic_address = nil
-      electronic_address_scheme = nil
-      if uri_node = find_child(node, "URIUniversalCommunication")
-        if uriid = find_child(uri_node, "URIID")
-          t = uriid.content.strip
-          unless t.empty?
-            electronic_address = t
-            electronic_address_scheme = uriid["schemeID"]?
-          end
-        end
-      end
+    private def parse_trade_party_contact(node : XML::Node) : {String?, String?, String?}
+      return {nil, nil, nil} unless contact_node = find_child(node, "DefinedTradeContact")
 
-      contact_name = nil
-      contact_phone = nil
-      contact_email = nil
-      if contact_node = find_child(node, "DefinedTradeContact")
-        contact_name = child_text(contact_node, "PersonName")
-        if phone_node = find_child(contact_node, "TelephoneUniversalCommunication")
-          contact_phone = child_text(phone_node, "CompleteNumber")
-        end
-        if email_node = find_child(contact_node, "EmailURIUniversalCommunication")
-          contact_email = child_text(email_node, "URIID")
-        end
-      end
+      contact_name = child_text(contact_node, "PersonName")
+      contact_phone = if phone_node = find_child(contact_node, "TelephoneUniversalCommunication")
+                        child_text(phone_node, "CompleteNumber")
+                      end
+      contact_email = if email_node = find_child(contact_node, "EmailURIUniversalCommunication")
+                        child_text(email_node, "URIID")
+                      end
 
-      TradeParty.new(
-        name,
-        address: address,
-        tax_registrations: tax_regs,
-        global_id: global_id,
-        global_id_scheme: global_id_scheme,
-        electronic_address: electronic_address,
-        electronic_address_scheme: electronic_address_scheme,
-        contact_name: contact_name,
-        contact_phone: contact_phone,
-        contact_email: contact_email
-      )
+      {contact_name, contact_phone, contact_email}
     end
 
     private def parse_trade_address(node : XML::Node?) : TradeAddress?
-      return nil if node.nil?
+      return if node.nil?
       city = child_text(node, "CityName") || ""
       country_id = child_text(node, "CountryID") || ""
       TradeAddress.new(
@@ -435,7 +432,7 @@ module Zugpferd
     end
 
     private def child_text(parent : XML::Node, local : String) : String?
-      node = find_child(parent, local) || return nil
+      node = find_child(parent, local) || return
       t = node.content.strip
       t.empty? ? nil : t
     end
@@ -448,7 +445,7 @@ module Zugpferd
     end
 
     private def child_amount(parent : XML::Node, local : String) : MonetaryAmount?
-      txt = child_text(parent, local) || return nil
+      txt = child_text(parent, local) || return
       BigDecimal.new(txt)
     end
 
@@ -459,10 +456,10 @@ module Zugpferd
     # Parses a <udt:DateTimeString format="102">YYYYMMDD</udt:DateTimeString>
     # from a wrapper element. Returns nil if wrapper or DateTimeString is absent.
     private def parse_date_from(parent : XML::Node, wrapper_local : String) : Time?
-      wrapper = find_child(parent, wrapper_local) || return nil
-      dts = find_child(wrapper, "DateTimeString") || return nil
+      wrapper = find_child(parent, wrapper_local) || return
+      dts = find_child(wrapper, "DateTimeString") || return
       t = dts.content.strip
-      return nil if t.empty?
+      return if t.empty?
       Time.parse(t, "%Y%m%d", Time::Location::UTC)
     end
 

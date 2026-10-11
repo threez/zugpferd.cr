@@ -3,26 +3,52 @@ on:
   pull_request:
     branches: [master]
 jobs:
-  verify-linux:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - name: Download source
         uses: actions/checkout@v4
       - name: Install Crystal
         uses: crystal-lang/install-crystal@v1
-      - name: Install libharu
-        run: sudo apt install libhpdf-dev
+        with:
+          crystal: 1.20.2
+      - name: Cache shards
+        uses: actions/cache@v4
+        with:
+          path: lib
+          key: ${{ runner.os }}-shards-${{ hashFiles('shard.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-shards-
       - name: Install development dependencies
         run: shards install
-      - name: Run tests
-        run: make lint spec
+      - name: Build ameba
+        run: cd lib/ameba && shards build ameba
       - name: Make sure the files are formatted
         run: crystal tool format --check
+      - name: Run ameba lint
+        run: lib/ameba/bin/ameba
+      - name: Install libharu
+        run: sudo apt-get install -y libhpdf-dev
+      - name: Check that the project compiles
+        run: crystal build src/zugpferd.cr -o /tmp/zugpferd_check --no-codegen
 
-  # libharu >= 2.4 (required for PDF/A-3b) is only available via Homebrew on macOS.
-  # Ubuntu ships 2.3.0, so PDF embedding and its integration tests run here only.
-  verify-macos:
-    runs-on: macos-latest
+  # Run on macOS only: src/zugpferd/pdf.cr calls PDF/A functions
+  # (HPDF_SetPDFAConformance, HPDF_AppendOutputIntents, HPDF_EmbeddedFile_*,
+  # etc.) that only exist in libharu >= 2.4. Ubuntu's `apt-get install
+  # libhpdf-dev` packages an older libharu that predates PDF/A support, so
+  # those symbols are undefined at link time and `crystal spec` fails to
+  # even build the spec binary on Ubuntu (this isn't fixable by skipping
+  # individual specs, since the link step fails before any test runs).
+  # Homebrew on macOS provides a current-enough libharu, so that leg is
+  # relied on for real `crystal spec` / `spec-integration` coverage;
+  # Ubuntu's compile/lint checks in the `lint` job above use
+  # `--no-codegen` and don't link, so they're unaffected.
+  test:
+    needs: lint
+    strategy:
+      matrix:
+        os: [macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Download source
         uses: actions/checkout@v4
@@ -31,6 +57,6 @@ jobs:
       - name: Install development dependencies
         run: shards install
       - name: Run tests
-        run: make lint spec
+        run: crystal spec --order=random
       - name: Run integration tests
         run: make spec-integration

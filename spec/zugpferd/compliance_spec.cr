@@ -5,11 +5,11 @@ require "../spec_helper"
 # generation tests are in generator_spec.cr.
 describe "ZUGFeRD fixture compliance" do
   {% for profile_dir in ["minimum", "basic_wl", "basic", "en16931", "extended"] %}
-    describe {{profile_dir}} do
-      fixtures = SpecHelper.fixture_files({{profile_dir}})
+    describe {{ profile_dir }} do
+      fixtures = SpecHelper.fixture_files({{ profile_dir }})
 
       if fixtures.empty?
-        pending "no fixture files found in spec/fixtures/#{{{profile_dir}}}/"
+        pending "no fixture files found in spec/fixtures/#{{{ profile_dir }}}/"
       else
         fixtures.each do |fixture_path|
           it "parses #{File.basename(fixture_path)} as well-formed XML" do
@@ -35,7 +35,7 @@ describe "ZUGFeRD fixture compliance" do
 
           it "#{File.basename(fixture_path)} has a date in format 102" do
             xml_str = File.read(fixture_path)
-            xml_str.should contain(%[format="102"])
+            xml_str.should contain(%(format="102"))
           end
 
           it "#{File.basename(fixture_path)} has monetary summation" do

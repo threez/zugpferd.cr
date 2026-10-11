@@ -38,8 +38,8 @@ describe "Mustang external validation" do
 
   describe "fixture files" do
     {% for profile_dir in ["minimum", "basic_wl", "basic", "en16931", "extended"] %}
-      SpecHelper.fixture_files({{profile_dir}}).each do |path|
-        it "fixture #{File.basename(path)} (#{{{profile_dir}}}) passes Mustang validation" do
+      SpecHelper.fixture_files({{ profile_dir }}).each do |path|
+        it "fixture #{File.basename(path)} (#{{{ profile_dir }}}) passes Mustang validation" do
           pending! "MUSTANG_JAR not set or java not available" unless MustangValidator.available?
           result = MustangValidator.validate(File.read(path))
           result.errors.each { |e| fail e } unless result.valid
